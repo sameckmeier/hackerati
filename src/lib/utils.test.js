@@ -48,7 +48,7 @@ describe('consecutiveRuns', () => {
 
   describe('receives integers with consecutive runs', () => {
     hasConsecutiveRuns.forEach(testData => {
-      it(`${JSON.stringify(testData.integers)} should return array of indexes`,
+      it(`${JSON.stringify(testData.integers)} should return ${JSON.stringify(testData.expectedRes)}`,
         () => chai.expect(consecutiveRuns(testData.integers)).to.eql(testData.expectedRes),
       );
     });
