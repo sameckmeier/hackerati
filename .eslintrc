@@ -1,0 +1,18 @@
+---
+extends: eslint-config-airbnb
+
+rules:
+  import/no-unresolved: off
+  no-underscore-dangle: off
+  arrow-parens: off
+  no-console: off
+  no-multi-str: off
+  max-len: [2, 120, 2]
+  import/no-extraneous-dependencies: off
+  import/extensions:
+    - off
+    - never
+
+parserOptions:
+  ecmaFeatures:
+    experimentalObjectRestSpread: true
