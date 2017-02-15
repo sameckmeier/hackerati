@@ -3,7 +3,9 @@ import { buildStoreKey } from '../../lib/actionsHelpers';
 
 export const BIDS = 'bids';
 
+// key to keep track of the current unique id for bids
 export const bidsIdIndexKey = () => buildStoreKey('.', BIDS, 'id', 'index');
+// id key for a bid record
 export const bidsIdKey = id => buildStoreKey(':', BIDS, id);
 
 export const schema = {

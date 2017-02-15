@@ -43,7 +43,7 @@ export const consecutiveRuns = integers => {
   let b;
 
   const integersLeng = integers.length;
-
+  // finishes iterating when index reaches second to last element
   for (let i = 0; i < integersLeng - 2; i += 1) {
     currentInteger = integers[i];
     a = integers[i + 1];
