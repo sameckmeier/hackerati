@@ -1,6 +1,6 @@
 # hackerati
 At a high level, this codebase is broken down into two primary parts: actions and schemas. Schemas are used
-to define and validate data types. Actions are what manages store CRUDing. For the store, I went with redis.
+to define and validate data types. Actions manages store CRUDing. For the store, I went with redis.
 All redis client functionality is wrapped by actions.
 
 In theory, this code would be integrated into an existing app. Actions act as route, or -- in the case
