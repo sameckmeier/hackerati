@@ -4,6 +4,7 @@ import {
   describe,
   it,
   after,
+  afterEach,
 } from 'mocha';
 import { BIDS, bidsIdIndexKey } from '../bids/schema';
 import { createAuction, closeAuction } from './actions';
@@ -14,12 +15,12 @@ import {
 } from '../../lib/actionsHelpers';
 import {
   ITEMS,
+  itemsAuctionsIdsKey,
   itemsIdIndexKey,
   itemsIdKey,
 } from '../items/schema';
 import {
   AUCTIONS,
-  auctionsItemsIdKey,
   auctionsIdKey,
   auctionsBidsIdsKey,
   auctionsIdIndexKey,
@@ -43,51 +44,57 @@ describe('Auctions actions', () => {
       sold: false,
     };
 
-    after(() => client.flushdb());
-
     describe('if the item is for sale and not on auction', () => {
-      let auctionsId;
+      afterEach(() => client.flushdb());
 
-      it('should persist if the item is still for sale and is not on auction',
+      it('should persist',
         () => chai.expect(
           createAuction(validParams)
-          .then(id => {
-            auctionsId = id;
-            return get(auctionsIdKey(id));
-          }),
+          .then(id => get(auctionsIdKey(id))),
         ).to.eventually.have.properties({ itemsId: validParams.itemsId }),
       );
 
-      it('should set auctions.items_id index',
+      it('should push auction id into list of items auction ids',
         () => chai.expect(
-          client.getAsync(auctionsItemsIdKey(validParams.itemsId)),
-        ).to.eventually.equal(auctionsId),
+          createAuction(validParams)
+          .then(() => client.lindexAsync(itemsAuctionsIdsKey(validParams.itemsId), -1)),
+        ).to.eventually.equal('1'),
       );
     });
 
-    it('should throw an error if the item has been sold',
-      () => chai.expect(
-        createAuction(itemSoldParams),
-      ).to.eventually.be.rejectedWith(Error, 'Item has already been sold'),
-    );
+    describe('if the item is not for sale', () => {
+      after(() => client.flushdb());
 
-    it('should throw an error if the item is already on auction',
-      () => chai.expect(
-        client.setAsync(auctionsItemsIdKey(itemOnAuctionParams.itemsId), 1)
-        .then(() => createAuction(itemOnAuctionParams)),
-      ).to.eventually.be.rejectedWith(Error, 'Item is already on auction'),
-    );
+      it('should throw an error',
+        () => chai.expect(
+          createAuction(itemSoldParams),
+        ).to.eventually.be.rejectedWith(Error, 'Item has been sold'),
+      );
+    });
+
+    describe('if the item is on auction', () => {
+      after(() => client.flushdb());
+
+      it('should throw an error',
+        () => chai.expect(
+          createAuction(itemOnAuctionParams)
+          .then(() => createAuction(itemOnAuctionParams)),
+        ).to.eventually.be.rejectedWith(Error, 'Item is on auction'),
+      );
+    });
   });
 
   describe('closeAuction', () => {
+    const auctionParams = {
+      auctioneersId: 1,
+      success: null,
+      winnersId: null,
+      active: true,
+    };
     const itemParams = {
       name: 'test',
       reservedPrice: 1.00,
       sold: false,
-    };
-    const auctionParams = {
-      auctioneersId: 1,
-      sold: itemParams.sold,
     };
     const bidParams = {
       participantsId: 1,
@@ -109,7 +116,7 @@ describe('Auctions actions', () => {
 
       return (
         Bluebird.all([
-          client.setAsync(auctionsItemsIdKey(itemsId), auctionsId),
+          client.rpushAsync(itemsAuctionsIdsKey(itemsId), auctionsId),
           auctionsId,
           itemsId,
         ])
@@ -167,12 +174,17 @@ describe('Auctions actions', () => {
           ])
           .then(res => {
             const { sold } = res[0];
-            const { winnersId, success } = res[1];
+            const {
+              winnersId,
+              success,
+              active,
+             } = res[1];
 
             return {
               winnersId,
               sold,
               success,
+              active,
             };
           })
         );
@@ -188,25 +200,45 @@ describe('Auctions actions', () => {
           winnersId: bidParams.participantsId,
           sold: true,
           success: true,
+          active: false,
         }),
       );
     });
 
     describe('when there are no bids', () => {
-      after(() => client.flushdb());
+      afterEach(() => client.flushdb());
 
-      const updatedAuctionsItemsIdIndex = ids => {
-        const itemsId = ids[0];
-
-        return client.getAsync(auctionsItemsIdKey(itemsId));
-      };
-
-      it('should reset the items auctions id',
+      it('should set auctions active and success fields to false',
         () => chai.expect(
           buildAuction()
           .then(res => runCloseAuction(res))
-          .then(res => updatedAuctionsItemsIdIndex(res)),
-        ).to.eventually.equal(null),
+          .then(res => {
+            const auctionsId = res[1];
+            return get(auctionsIdKey(auctionsId));
+          }),
+        ).to.eventually.have.properties({ active: false, success: false }),
+      );
+
+      it('should push the auctions id to the list of items auctions id',
+        () => chai.expect(
+          buildAuction()
+          .then(res => runCloseAuction(res))
+          .then(res => {
+            const itemsId = res[0];
+            return client.lindexAsync(itemsAuctionsIdsKey(itemsId), -1);
+          }),
+        ).to.eventually.equal('1'),
+      );
+
+      it('should items sold field to false',
+        () => chai.expect(
+          buildAuction()
+          .then(res => runCloseAuction(res))
+          .then(res => {
+            const itemsId = res[0];
+            return get(itemsIdKey(itemsId));
+          }),
+        ).to.eventually.have.properties({ sold: false }),
       );
     });
   });
