@@ -17,29 +17,32 @@ export const createItem = params => {
   const { name } = params;
 
   return (
+    // checks whether item exists
     client.getAsync(itemsNameKey(name))
     .then(item => {
       if (item) {
         throw new Error('Item already exists');
       } else {
         return (
+          // creates item if unique name
           create({
             params,
             schema,
             idIndexKey: itemsIdIndexKey(),
             type: ITEMS,
           })
-          .then(id => Bluebird.all([
-            client.setAsync(itemsNameKey(name), id),
-            id,
-          ])
-          .then(res => {
-            const id = res[1];
-            return id;
-          }))
         );
       }
     })
+    // sets index key to query item id by name
+    .then(itemsId => Bluebird.all([
+      client.setAsync(itemsNameKey(name), itemsId),
+      itemsId,
+    ])
+    .then(res => {
+      const itemsId = res[1];
+      return itemsId;
+    }))
   );
 };
 
@@ -47,7 +50,7 @@ export const getItem = name => client.getAsync(itemsNameKey(name))
 .then(itemsId => {
   let item = null;
   let auctionsId = null;
-
+  // gets item if exists
   if (itemsId) {
     item = get(itemsIdKey(itemsId));
     auctionsId = client.lindexAsync(itemsAuctionsIdsKey(itemsId), -1);
@@ -68,7 +71,7 @@ export const getItem = name => client.getAsync(itemsNameKey(name))
 
   let auction = null;
   let highestBidId = null;
-
+  // gets auction and auctions highest bid id if auctions id is not null
   if (auctionsId) {
     auction = get(auctionsIdKey(auctionsId));
     highestBidId = client.lindexAsync(auctionsBidsIdsKey(auctionsId), -1);
@@ -89,11 +92,11 @@ export const getItem = name => client.getAsync(itemsNameKey(name))
 
   let winner = null;
   let highestBid = null;
-
+  // if auction exists grabs the winning participant
   if (auction) {
     winner = get(usersIdKey(auction.winnersId));
   }
-
+  // grabs highest bid if participants submitted bids to the item's associated auction
   if (highestBidId) {
     highestBid = get(bidsIdKey(highestBidId));
   }
@@ -116,9 +119,9 @@ export const getItem = name => client.getAsync(itemsNameKey(name))
   const info = { sold };
 
   if (auction) {
-    const { success } = auction;
+    const { success, active } = auction;
 
-    info.activeAuction = success === null;
+    info.onAuction = active;
 
     if (highestBid) {
       const { price } = highestBid;
