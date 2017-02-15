@@ -49,7 +49,7 @@ export const createAuction = params => {
         );
       }
     })
-    // sets index key to reference auction id from corresponding item id
+    // adds auction id to item's list of auctions
     .then(auctionsId => Bluebird.all(
       [
         client.rpushAsync(itemsAuctionsIdsKey(itemsId), auctionsId),
@@ -91,11 +91,12 @@ export const closeAuction = (id, itemsId) => {
         newItemValues.sold = true;
       } else {
         // if the item wasn't bid on, we will make sure that the item's sold field is set to false
-        // so that an auctioneer can start an auction on it in the future
+        // and set active and success on auction to false
+        // so that an auctioneer can start an auction on this item in the future
         newItemValues.sold = false;
       }
 
-      // instantiates promies to update auction and corresponding item values
+      // updates item and auction values
       return (
         Bluebird.all([
           update({
