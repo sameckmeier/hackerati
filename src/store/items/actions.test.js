@@ -65,7 +65,7 @@ describe('Items actions', () => {
     const participantParams = { type: 'participant', name: 'test participant' };
     const itemParams = { name: 'test', reservedPrice: 0.50, sold: false };
 
-    const existingAuctionSetup = (success, itemParams) => Bluebird.all([
+    const existingAuctionSetup = (active, success, itemParams) => Bluebird.all([
       persist(buildStoreKey('.', USERS, 'id', 'index'), USERS, auctioneerParams),
       persist(buildStoreKey('.', USERS, 'id', 'index'), USERS, participantParams),
       persist(itemsIdIndexKey(), ITEMS, itemParams),
@@ -85,6 +85,7 @@ describe('Items actions', () => {
             winnersId: participantsId,
             itemsId,
             success,
+            active,
           }),
         ])
       );
@@ -129,13 +130,13 @@ describe('Items actions', () => {
 
     it('should return auction, item, and winning participant info if sold',
       () => chai.expect(
-        existingAuctionSetup(true, Object.assign({}, itemParams, { sold: true }))
+        existingAuctionSetup(false, true, Object.assign({}, itemParams, { sold: true }))
         .then(res => setAuctionsItemsIdIndex(res))
         .then(res => buildBid(res))
         .then(() => getItem(itemParams.name)),
       ).to.eventually.have.properties({
         sold: true,
-        activeAuction: false,
+        onAuction: false,
         highestBid: 1.00,
         success: true,
         winnersName: 'test participant',
@@ -144,13 +145,13 @@ describe('Items actions', () => {
 
     it('should return item and auction info if not sold',
       () => chai.expect(
-        existingAuctionSetup(null, itemParams)
+        existingAuctionSetup(true, null, itemParams)
         .then(res => setAuctionsItemsIdIndex(res))
         .then(res => buildBid(res))
         .then(() => getItem(itemParams.name)),
       ).to.eventually.have.properties({
         sold: false,
-        activeAuction: true,
+        onAuction: true,
         highestBid: 1.00,
       }),
     );
