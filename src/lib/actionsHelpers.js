@@ -137,9 +137,9 @@ export const create = args => {
 
   return (
     new Bluebird((resolve) => {
+      const validatedParams = {};
       let value;
       let constraint;
-      let validatedParams = {};
 
       fields.forEach(field => {
         value = params[field];
