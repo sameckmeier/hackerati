@@ -20,3 +20,5 @@ Once you've finished setting up your environment, cd into the directory where yo
 At this point, you should be ready to go! The last step before you can run the tests, is starting redis by executing redis-server in your terminal.
 
 You should now pop a new terminal and run the tests by executing npm run test!
+
+I've also included my implementation of consecutiveRuns in src/lib/utils.js. Its tests are in src/lib/utils.test.js.
