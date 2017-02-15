@@ -139,6 +139,7 @@ export const create = args => {
     new Bluebird((resolve) => {
       let value;
       let constraint;
+      let validatedParams = {};
 
       fields.forEach(field => {
         value = params[field];
@@ -155,9 +156,11 @@ export const create = args => {
           constraint,
           type,
         });
+
+        validatedParams[field] = value;
       });
 
-      resolve(params);
+      resolve(validatedParams);
     })
     .then(validParams => persist(idIndexKey, type, validParams))
   );
