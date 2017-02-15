@@ -3,10 +3,12 @@ import { buildStoreKey } from '../../lib/actionsHelpers';
 
 export const AUCTIONS = 'auctions';
 
+// key to keep track of the current unique id for auctions
 export const auctionsIdIndexKey = () => buildStoreKey('.', AUCTIONS, 'id', 'index');
-export const auctionsItemsIdKey = itemsId => buildStoreKey('.', AUCTIONS, 'items_id', itemsId);
+// id key for an auction record
 export const auctionsIdKey = id => buildStoreKey(':', AUCTIONS, id);
-export const auctionsBidsIdsKey = id => buildStoreKey('.', AUCTIONS, 'bids', id);
+// key to an auction record's list of bid ids
+export const auctionsBidsIdsKey = bidId => buildStoreKey('.', AUCTIONS, 'bids', bidId);
 
 export const schema = {
   fields: [
@@ -14,14 +16,17 @@ export const schema = {
     'itemsId',
     'winnersId',
     'success',
+    'active',
   ],
   constraints: {
     auctioneersId: auctioneersId => isType(auctioneersId, 'Number'),
     itemsId: itemsId => isType(itemsId, 'Number'),
     winnersId: winnersId => isType(winnersId, 'Number') || isType(winnersId, 'Null'),
     success: success => isType(success, 'Boolean') || isType(success, 'Null'),
+    active: active => isType(active, 'Boolean'),
   },
   defaults: {
+    active: true,
     success: null,
     winnersId: null,
   },
