@@ -2,15 +2,12 @@ import Bluebird from 'bluebird';
 import client from '../../config/redis';
 import { usersIdKey } from '../users/schema';
 import { bidsIdKey } from '../bids/schema';
-import {
-  auctionsItemsIdKey,
-  auctionsIdKey,
-  auctionsBidsIdsKey,
-} from '../auctions/schema';
+import { auctionsIdKey, auctionsBidsIdsKey } from '../auctions/schema';
 import { create, get } from '../../lib/actionsHelpers';
 import {
   ITEMS,
   schema,
+  itemsAuctionsIdsKey,
   itemsNameKey,
   itemsIdKey,
   itemsIdIndexKey,
@@ -53,7 +50,7 @@ export const getItem = name => client.getAsync(itemsNameKey(name))
 
   if (itemsId) {
     item = get(itemsIdKey(itemsId));
-    auctionsId = client.getAsync(auctionsItemsIdKey(itemsId));
+    auctionsId = client.lindexAsync(itemsAuctionsIdsKey(itemsId), -1);
   } else {
     throw new Error('Item does not exist');
   }

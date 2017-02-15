@@ -10,11 +10,12 @@ import {
   schema as itemsSchema,
   ITEMS,
   itemsIdKey,
+  itemsAuctionsIdsKey,
 } from '../items/schema';
 import {
   AUCTIONS,
   schema,
-  auctionsItemsIdKey,
+  auctionsIdKey,
   auctionsBidsIdsKey,
   auctionsIdIndexKey,
  } from './schema';
@@ -29,33 +30,36 @@ export const createAuction = params => {
   } = params;
 
   if (sold) {
-    promise = Bluebird.reject(new Error('Item has already been sold'));
+    promise = Bluebird.reject(new Error('Item has been sold'));
   } else {
-    promise = client.getAsync(auctionsItemsIdKey(itemsId))
-    .then(auctionsId => {
-      if (auctionsId) {
-        throw new Error('Item is already on auction');
+    promise = client.lindexAsync(itemsAuctionsIdsKey(itemsId), -1)
+    .then(auctionsId => get(auctionsIdKey(auctionsId)))
+    .then(auction => {
+      if (auction && auction.active) {
+        throw new Error('Item is on auction');
       } else {
         return (
+          // creates auction
           create({
             params: { auctioneersId, itemsId },
             schema,
             idIndexKey: auctionsIdIndexKey(),
             type: AUCTIONS,
           })
-          .then(auctionsId => Bluebird.all(
-            [
-              client.setAsync(auctionsItemsIdKey(itemsId), auctionsId),
-              auctionsId,
-            ],
-          ))
-          .then(res => {
-            const auctionsId = res[1];
-
-            return auctionsId;
-          })
         );
       }
+    })
+    // sets index key to reference auction id from corresponding item id
+    .then(auctionsId => Bluebird.all(
+      [
+        client.rpushAsync(itemsAuctionsIdsKey(itemsId), auctionsId),
+        auctionsId,
+      ],
+    ))
+    .then(res => {
+      const auctionsId = res[1];
+
+      return auctionsId;
     });
   }
 
@@ -74,65 +78,46 @@ export const closeAuction = (id, itemsId) => {
     ])
     .then(res => {
       const item = res[0];
-      const newAuctionValues = { success: false };
-      const newItemValues = {};
-      let removeItemsIdIndex = false;
-      let promise;
-
       const highestBid = res[1];
       const { reservedPrice } = item;
+      const newAuctionValues = { active: false, success: false };
+      const newItemValues = {};
 
       if (highestBid) {
         const { price, participantsId } = highestBid;
 
-        if (price > reservedPrice) {
-          newAuctionValues.success = true;
-        }
-
+        newAuctionValues.success = price > reservedPrice;
         newAuctionValues.winnersId = participantsId;
         newItemValues.sold = true;
       } else {
-        removeItemsIdIndex = true;
+        // if the item wasn't bid on, we will make sure that the item's sold field is set to false
+        // so that an auctioneer can start an auction on it in the future
+        newItemValues.sold = false;
       }
 
-      promise = Bluebird.all([
-        update({
-          newValues: newItemValues,
-          schema: itemsSchema,
-          id: itemsId,
-          type: ITEMS,
-        }),
-        update({
-          newValues: newAuctionValues,
-          schema,
-          id,
-          type: AUCTIONS,
-        }),
-      ]);
+      // instantiates promies to update auction and corresponding item values
+      return (
+        Bluebird.all([
+          update({
+            newValues: newItemValues,
+            schema: itemsSchema,
+            id: itemsId,
+            type: ITEMS,
+          }),
+          update({
+            newValues: newAuctionValues,
+            schema,
+            id,
+            type: AUCTIONS,
+          }),
+        ])
+      );
+    })
+    .then(res => {
+      const itemsId = res[0];
+      const auctionsId = res[1];
 
-      if (removeItemsIdIndex) {
-        promise = promise
-        .then(res => {
-          const itemsId = res[0];
-          const auctionsId = res[1];
-
-          return (
-            Bluebird.all([
-              client.delAsync(auctionsItemsIdKey(itemsId)),
-              itemsId,
-              auctionsId,
-            ])
-            .then(res => {
-              const itemsId = res[0];
-              const auctionsId = res[1];
-
-              return [itemsId, auctionsId];
-            })
-          );
-        });
-      }
-
-      return promise;
+      return [itemsId, auctionsId];
     })
   );
 };
