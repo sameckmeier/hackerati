@@ -24,6 +24,7 @@ export default params => {
         throw new Error('Invalid bid');
       } else {
         return (
+          // creates a new bid if it is the first or higher than the previos bid
           create({
             params: {
               auctionsId,
@@ -34,11 +35,16 @@ export default params => {
             idIndexKey: bidsIdIndexKey(),
             type: BIDS,
           })
+          // pushes bid id to list that stores bid ids for an auction
           .then(bidsId => Bluebird.all([
             client.rpushAsync(auctionsBidsIdsKey(auctionsId), bidsId),
             bidsId,
           ]))
-          .then(res => res[1])
+          .then(res => {
+            const bidsId = res[1];
+
+            return bidsId;
+          })
         );
       }
     })
