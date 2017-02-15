@@ -17,12 +17,12 @@ import {
 } from '../../lib/actionsHelpers';
 import {
   AUCTIONS,
-  auctionsItemsIdKey,
   auctionsIdIndexKey,
   auctionsBidsIdsKey,
 } from '../auctions/schema';
 import {
   ITEMS,
+  itemsAuctionsIdsKey,
   itemsIdIndexKey,
   itemsNameKey,
   itemsIdKey,
@@ -97,7 +97,7 @@ describe('Items actions', () => {
 
       return (
         Bluebird.all([
-          client.setAsync(auctionsItemsIdKey(itemsId), auctionsId),
+          client.rpushAsync(itemsAuctionsIdsKey(itemsId), auctionsId),
           participantsId,
           itemsId,
           auctionsId,
