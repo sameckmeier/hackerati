@@ -35,18 +35,18 @@ export default params => {
             idIndexKey: bidsIdIndexKey(),
             type: BIDS,
           })
-          // pushes bid id to list that stores bid ids for an auction
-          .then(bidsId => Bluebird.all([
-            client.rpushAsync(auctionsBidsIdsKey(auctionsId), bidsId),
-            bidsId,
-          ]))
-          .then(res => {
-            const bidsId = res[1];
-
-            return bidsId;
-          })
         );
       }
+    })
+    // pushes bid id to list that stores bid ids for an auction
+    .then(bidsId => Bluebird.all([
+      client.rpushAsync(auctionsBidsIdsKey(auctionsId), bidsId),
+      bidsId,
+    ]))
+    .then(res => {
+      const bidsId = res[1];
+
+      return bidsId;
     })
   );
 };
