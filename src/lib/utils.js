@@ -2,13 +2,12 @@ export const isType = (val, type) => toString.call(val) === `[object ${type}]`;
 
 export const defaults = (object, defaultValues) => {
   const defaultKeys = Object.keys(defaultValues);
-  const defaultObject = {};
 
   defaultKeys.forEach(k => {
-    defaultObject[k] = object[k] || defaultValues[k];
+    object[k] = object[k] || defaultValues[k];
   });
 
-  return Object.assign({}, defaultObject, object);
+  return object;
 };
 
 export const objMatch = toMatch => obj => {
