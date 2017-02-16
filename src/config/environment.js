@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// any machine specific env vars you set will overide these default values 
+// any env vars that have already been set will overide these default values if they are the same
 process.env = Object.assign(
   {},
   {
