@@ -19,6 +19,8 @@ Redis: v3.2.0 https://redis.io/download
 Once you've finished setting up your environment, cd into the directory where you cloned this repo and run npm install.
 The last step before you can run the tests, is starting redis by executing redis-server in your terminal.
 
+If you'd like, you can place .env.[environment_name] files in the root dir of the app, which will set env vars on process.env (https://www.npmjs.com/package/dotenv). For example, I use two: .env.development and .env.test. In each, I set REDIS_DB to different zero-indexed integers. If you choose to skip this step, no worries! Redis client will default to db number 0. 
+
 You should now pop a new terminal and run the tests by executing npm run test!
 
 I've also included my implementation of consecutiveRuns in src/lib/utils.js. Its tests are in src/lib/utils.test.js.
