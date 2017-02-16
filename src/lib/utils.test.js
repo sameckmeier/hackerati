@@ -9,7 +9,6 @@ import {
   isDefined,
   isType,
   convertType,
-  defaults,
 } from './utils';
 
 describe('consecutiveRuns', () => {
@@ -190,18 +189,6 @@ describe('isType', () => {
       );
     });
   });
-});
-
-describe('defaults', () => {
-  const defaultValues = { a: 1, c: 3 };
-
-  it('should set default values on object',
-    () => chai.expect(defaults({ b: 2, c: 4 }, defaultValues)).to.eql({
-      a: 1,
-      b: 2,
-      c: 4,
-    }),
-  );
 });
 
 describe('convertType', () => {
